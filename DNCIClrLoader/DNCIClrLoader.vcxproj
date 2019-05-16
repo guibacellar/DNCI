@@ -92,6 +92,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y  $(TargetPath) ..\DNCI.Injector.Library\resources\DNCIClrLoader.bin
+
+powershell -ExecutionPolicy Unrestricted -File converter_to_b64.ps1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -160,6 +165,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="converter_to_b64.ps1" />
     <None Include="module.def" />
   </ItemGroup>
   <ItemGroup>

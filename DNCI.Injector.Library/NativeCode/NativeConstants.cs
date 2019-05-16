@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace DNCI.Injector.Library
+namespace DNCI.Injector.Library.NativeCode
 {
     /// <summary>
     /// Constants for Native Code Execution

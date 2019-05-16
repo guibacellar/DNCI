@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-namespace DNCI.Injector.Library
+namespace DNCI.Injector.Library.NativeCode
 {
     /// <summary>
     /// Native Code Functions
@@ -46,7 +46,10 @@ namespace DNCI.Injector.Library
         [DllImport("Kernel32", ExactSpelling = true, CharSet = CharSet.Auto)]
         internal static extern bool GetExitCodeThread(IntPtr hHandle, out int lpdwExitCode);
 
-        
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
+        internal static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName);
+
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern uint GetProcessId(IntPtr handle);
 
@@ -62,5 +65,8 @@ namespace DNCI.Injector.Library
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr CreateToolhelp32Snapshot(NativeStructures.SnapshotFlags dwFlags, uint th32ProcessID);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool FreeLibrary(IntPtr hModule);
     }
 }

@@ -23,6 +23,7 @@
     <None Include="module.def">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="converter_to_b64.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClrLoaderArgs.h">

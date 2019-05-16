@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace DNCI.Injector.Library
+namespace DNCI.Injector.Library.NativeCode
 {
     /// <summary>
     /// Contains Native Code Structures
