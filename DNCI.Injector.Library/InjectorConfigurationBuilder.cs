@@ -23,6 +23,17 @@ namespace DNCI.Injector.Library
         }
 
         /// <summary>
+        /// Just try to Inject on Every Running Process. Simple like That  
+        /// </summary>
+        /// <returns></returns>
+        public InjectorConfigurationBuilder InjectWithBruteForce()
+        {
+            this.configuration.TargetProcessNames.Clear();
+            this.configuration.TargetProcessNames.Add("*:*");
+            return this;
+        }
+
+        /// <summary>
         /// The process name of the process to inject. Cumulative Option.  
         /// </summary>
         /// <param name="processName">notepad.exe</param>
@@ -102,7 +113,7 @@ namespace DNCI.Injector.Library
         /// Return Configuration Object
         /// </summary>
         /// <returns></returns>
-        public InjectorConfiguration build()
+        public InjectorConfiguration Build()
         {
             return this.configuration;
         }

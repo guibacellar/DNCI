@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using DNCI.Injector.Library.Exception;
 using DNCI.Injector.Library.NativeCode;
 
 namespace DNCI.Injector.Library
@@ -12,14 +14,6 @@ namespace DNCI.Injector.Library
     /// </summary>
     public class Injector
     {
-        public static readonly int STATUS_OK = 0;
-
-        public static readonly int STATUS_VALIDATION_TARGETPROCESS_CONFIGURATION_CONFLICT = 1000;
-
-        public static readonly int STATUS_TARGET_PROCESS_NOT_FOUND = 9000;
-        public static readonly int STATUS_UNABLE_TO_GET_PROCESS_HANDLE = 9001;
-        public static readonly int STATUS_UNABLE_TO_FIND_INJECTOR_HANDLE = 9002;
-        public static readonly int STATUS_MASTER_ERROR = 9999;
         private readonly InjectorConfiguration configuration;
         private string moduleTempFileName;
 
@@ -31,33 +25,23 @@ namespace DNCI.Injector.Library
         {
             this.configuration = configuration;
         }
-        
+
         /// <summary>
         /// Execute the Injector
         /// </summary>
-        /// <returns></returns>
-        public int Run()
+        /// <exception cref="InvalidConfigurationException">If TargetProcessNames and TargetProcessIds was used at same time</exception>
+        /// <returns>list of Processing Results</returns>
+        public List<InjectorResult> Run()
         {
             // Check ProcessID and ProcessName Conflict
             if (this.configuration.TargetProcessNames.Count > 0 && this.configuration.TargetProcessIds.Count > 0)
             {
-                return STATUS_VALIDATION_TARGETPROCESS_CONFIGURATION_CONFLICT;
+                throw new InvalidConfigurationException("TargetProcessNames and TargetProcessIds cannot be used at same time");
             }
 
-            int hResult = STATUS_TARGET_PROCESS_NOT_FOUND;
-
-            try
-            {
-                // Resolve ProcessName to ProcessId (if Applicable)
-                if (this.configuration.TargetProcessNames.Count > 0) { hResult = RunForProcessNames(); }
-                else { hResult = ExecuteForProcessIds(); }
-
-            } catch
-            {
-                return STATUS_MASTER_ERROR;
-            }
-
-            return hResult;
+            // Run Injection
+            if (this.configuration.TargetProcessNames.Count > 0) { return RunForProcessNames(); }
+            else { return ExecuteForProcessIds(); }
         }
 
         /// <summary>
@@ -65,15 +49,16 @@ namespace DNCI.Injector.Library
         /// </summary>
         /// <param name="hResult"></param>
         /// <returns></returns>
-        private int ExecuteForProcessIds()
+        private List<InjectorResult> ExecuteForProcessIds()
         {
-            int hResult = STATUS_TARGET_PROCESS_NOT_FOUND;
+            List<InjectorResult> hResult = new List<InjectorResult>();
 
             foreach (Int32 processId in this.configuration.TargetProcessIds)
             {
-                hResult = this.DoInject(processId);
+                InjectorResult result = this.DoInject(processId);
+                hResult.Add(result);
 
-                if (hResult == STATUS_OK)
+                if (result.Status == InjectorResultStatus.OK)
                 {
                     break;
                 }
@@ -86,15 +71,22 @@ namespace DNCI.Injector.Library
         /// Execute using Process Name List
         /// </summary>
         /// <returns></returns>
-        private int RunForProcessNames()
+        private List<InjectorResult> RunForProcessNames()
         {
-            int hResult = STATUS_TARGET_PROCESS_NOT_FOUND;
+            List<InjectorResult> hResult = new List<InjectorResult>();
+
+            // Check Brute Force Mode
+            if (this.configuration.TargetProcessNames.Count == 1 && this.configuration.TargetProcessNames[0] == "*:*")
+            {
+                return this.RunForBruteForce();
+            }
 
             foreach (String processName in this.configuration.TargetProcessNames)
             {
-                hResult = this.InjectWithProcessName(processName);
+                List<InjectorResult> results = this.InjectWithProcessName(processName);
+                hResult.AddRange(results);
 
-                if (hResult == STATUS_OK)
+                if (results.Find(e => e.Status == InjectorResultStatus.OK) != null)
                 {
                     break;
                 }
@@ -104,70 +96,136 @@ namespace DNCI.Injector.Library
         }
 
         /// <summary>
-        /// Inject .NET Assembly into Remote Process using Process Name as Parameter
+        /// Try to Inject on Every Running Process
+        /// </summary>
+        /// <returns></returns>
+        private List<InjectorResult> RunForBruteForce()
+        {
+            List<InjectorResult> hResult = new List<InjectorResult>();
+
+            foreach (Process process in Process.GetProcesses())
+            {
+                InjectorResult result = this.DoInject(process.Id);
+                hResult.Add(result);
+
+                if (result.Status == InjectorResultStatus.OK)
+                {
+                    break;
+                }
+            }
+
+            return hResult;
+        }
+
+        /// <summary>
+        /// Inject .NET Assembly into Remote Process using Process Name as Parameter. One Single Process Name can result in Several Process with Same Name, but, different PIDs
         /// </summary>
         /// <param name="targetProcessName">The process Name of the process to inject. EX: notepad++</param>
         /// <returns></returns>
-        public int InjectWithProcessName(String targetProcessName)
+        public List<InjectorResult> InjectWithProcessName(String targetProcessName)
         {
+            // Return Object
+            List<InjectorResult> hResult = new List<InjectorResult>();
+
             // Get Possible Process
             Process[] targetProcessList = Process.GetProcessesByName(targetProcessName);
 
             // Check if Process Exists
             if (targetProcessList == null || targetProcessList.Length == 0)
             {
-                return STATUS_MASTER_ERROR;
+                hResult.Add(
+                    new InjectorResult()
+                    {
+                        TargetProcessName = targetProcessName,
+                        Status = InjectorResultStatus.TARGET_PROCESS_NOT_FOUND
+                    }
+                );
+            }
+            else
+            {
+                foreach (Process process in targetProcessList)
+                {
+                    InjectorResult result = this.DoInject(process.Id);
+                    hResult.Add(result);
+
+                    if (result.Status == InjectorResultStatus.OK)
+                    {
+                        break;
+                    }
+                }
             }
 
-            return this.DoInject(targetProcessList[0].Id);
+            return hResult;
         }
 
         /// <summary>
         /// Inject .NET Assembly into Remote Process
         /// </summary>
         /// <returns></returns>
-        private int DoInject(Int32 targetProcessId) 
+        private InjectorResult DoInject(Int32 targetProcessId) 
         {
-            // Copy DNCIClrLoader.dll into Temporary Folder with Random Name
-            String dnciLoaderLibraryPath = WriteLoaderToDisk();
-
-            // Open and get handle of the process - with required privileges
-            IntPtr targetProcessHandle = NativeExecution.OpenProcess(
-                NativeConstants.PROCESS_ALL_ACCESS,
-                false,
-                targetProcessId
-            );
-
-            // Check Process Handle 
-            if (targetProcessHandle == null || targetProcessHandle == IntPtr.Zero)
+            // Create Result Object
+            InjectorResult hResult = new InjectorResult()
             {
-                return STATUS_UNABLE_TO_GET_PROCESS_HANDLE;
-            }
+                TargetProcessId = targetProcessId
+            };
 
-            // Find the LoadDNA Function Point into Remote Process Memory
-            IntPtr dnciModuleHandle = DNCIClrLoader(targetProcessHandle, dnciLoaderLibraryPath, Path.GetFileName(dnciLoaderLibraryPath));
-
-            // Check Injector Handle
-            if (dnciModuleHandle == null || dnciModuleHandle == IntPtr.Zero)
+            try
             {
-                return STATUS_UNABLE_TO_FIND_INJECTOR_HANDLE;
+                // Copy DNCIClrLoader.dll into Temporary Folder with Random Name
+                String dnciLoaderLibraryPath = WriteLoaderToDisk();
+
+                // Open and get handle of the process - with required privileges
+                IntPtr targetProcessHandle = NativeExecution.OpenProcess(
+                    NativeConstants.PROCESS_ALL_ACCESS,
+                    false,
+                    targetProcessId
+                );
+
+                // Check Process Handle 
+                if (targetProcessHandle == null || targetProcessHandle == IntPtr.Zero)
+                {
+                    hResult.Status = InjectorResultStatus.UNABLE_TO_GET_PROCESS_HANDLE;
+                    return hResult;
+                }
+
+                // Get Process Name
+                hResult.TargetProcessName = Process.GetProcessById(targetProcessId).ProcessName;
+
+
+                // Find the LoadDNA Function Point into Remote Process Memory
+                IntPtr dnciModuleHandle = DNCIClrLoader(targetProcessHandle, dnciLoaderLibraryPath, Path.GetFileName(dnciLoaderLibraryPath));
+
+                // Check Injector Handle
+                if (dnciModuleHandle == null || dnciModuleHandle == IntPtr.Zero)
+                {
+                    hResult.Status = InjectorResultStatus.UNABLE_TO_FIND_INJECTOR_HANDLE;
+                    return hResult;
+                }
+
+                // Inject Managed Assembly
+                LoadManagedAssemblyOnRemoteProcess(targetProcessHandle, dnciModuleHandle, this.configuration.MethodName, this.configuration.AssemblyFileLocation, this.configuration.TypeName, this.configuration.ArgumentString, dnciLoaderLibraryPath);
+
+                // Erase Modules from Target Process
+                EraseRemoteModules(targetProcessHandle, dnciModuleHandle);
+
+                // Close Remote Process Handle
+                NativeExecution.CloseHandle(targetProcessHandle);
+
+                // Remove Temporary File
+                try
+                {
+                    File.Delete(dnciLoaderLibraryPath);
+                }
+                catch { }
+
+                hResult.Status = InjectorResultStatus.OK;
             }
-
-            // Inject Managed Assembly
-            LoadManagedAssemblyOnRemoteProcess(targetProcessHandle, dnciModuleHandle, this.configuration.MethodName, this.configuration.AssemblyFileLocation, this.configuration.TypeName, this.configuration.ArgumentString, dnciLoaderLibraryPath);
-
-            // Erase Modules from Target Process
-            EraseRemoteModules(targetProcessHandle, dnciModuleHandle);
-
-            // Close Remote Process Handle
-            NativeExecution.CloseHandle(targetProcessHandle);
-
-            // Remove Temporary File
-            try { 
-                File.Delete(dnciLoaderLibraryPath);
-            } catch { }
-
-            return STATUS_OK;
+            catch
+            {
+                hResult.Status = InjectorResultStatus.MASTER_ERROR;
+            }
+            return hResult;
         }
 
         /// <summary>
@@ -317,7 +375,6 @@ namespace DNCI.Injector.Library
 
             // Close the Handle
             NativeExecution.CloseHandle(snapshotHandle);
-
 
             // Return if Success on Search
             if (moduleEntry.szModule == moduleName)
