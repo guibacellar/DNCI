@@ -29,8 +29,6 @@ namespace DNCI.Injector.Library.NativeCode
           PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_DUP_HANDLE | PROCESS_CREATE_PROCESS | PROCESS_SET_QUOTA |
           PROCESS_SET_INFORMATION | PROCESS_QUERY_INFORMATION | STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF;
 
-
-
         // used for memory allocation
         internal const uint MEM_COMMIT = 0x00001000;
         internal const uint MEM_RESERVE = 0x00002000;
