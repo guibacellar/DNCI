@@ -17,9 +17,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InjectDemo", "InjectDemo", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InjectDemo.Console.ClassicNet", "InjectDemo.Console.ClassicNet\InjectDemo.Console.ClassicNet.csproj", "{248FF9A4-E64A-42B5-B904-08E1C2668467}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InjectDemo.Console.DotNetCore", "InjectDemo.Console.DotNetCore\InjectDemo.Console.DotNetCore.csproj", "{27CC534F-1891-4C25-9A3E-70D08F9A2BE1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InjectDemo.Console.DotNetCore", "InjectDemo.Console.DotNetCore\InjectDemo.Console.DotNetCore.csproj", "{27CC534F-1891-4C25-9A3E-70D08F9A2BE1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InjectDemo.Dll.ClassicNet", "InjectDemo.Dll.ClassicNet\InjectDemo.Dll.ClassicNet.csproj", "{66BF1AEE-7AC9-424B-9C27-BFE97EC3A3E2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".NetArticle", ".NetArticle", "{1003217A-090D-45C6-8E75-EB1720AFB922}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DNCIArticleConsoleApplication", "DNCIArticleConsoleApplication\DNCIArticleConsoleApplication.csproj", "{C2E87A64-FC73-4D38-83C3-C663C4942887}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,6 +105,18 @@ Global
 		{66BF1AEE-7AC9-424B-9C27-BFE97EC3A3E2}.Release|x64.Build.0 = Release|Any CPU
 		{66BF1AEE-7AC9-424B-9C27-BFE97EC3A3E2}.Release|x86.ActiveCfg = Release|Any CPU
 		{66BF1AEE-7AC9-424B-9C27-BFE97EC3A3E2}.Release|x86.Build.0 = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|x64.Build.0 = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Debug|x86.Build.0 = Debug|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|x64.ActiveCfg = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|x64.Build.0 = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|x86.ActiveCfg = Release|Any CPU
+		{C2E87A64-FC73-4D38-83C3-C663C4942887}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,6 +128,7 @@ Global
 		{248FF9A4-E64A-42B5-B904-08E1C2668467} = {FFDED678-E09E-4F92-882F-AB69A411E1FF}
 		{27CC534F-1891-4C25-9A3E-70D08F9A2BE1} = {FFDED678-E09E-4F92-882F-AB69A411E1FF}
 		{66BF1AEE-7AC9-424B-9C27-BFE97EC3A3E2} = {FFDED678-E09E-4F92-882F-AB69A411E1FF}
+		{C2E87A64-FC73-4D38-83C3-C663C4942887} = {1003217A-090D-45C6-8E75-EB1720AFB922}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {854B21A7-D196-4595-9412-AD44D843C48A}

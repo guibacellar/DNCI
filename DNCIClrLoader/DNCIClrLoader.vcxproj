@@ -94,6 +94,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y  $(TargetPath) ..\DNCI.Injector.Library\resources\DNCIClrLoader.bin
+xcopy /y  $(TargetPath) ..\DNCIArticleConsoleApplication\bin\Debug\
 
 powershell -ExecutionPolicy Unrestricted -File converter_to_b64.ps1</Command>
     </PostBuildEvent>

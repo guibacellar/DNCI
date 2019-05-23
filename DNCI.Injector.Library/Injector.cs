@@ -110,7 +110,7 @@ namespace DNCI.Injector.Library
 
                 if (result.Status == InjectorResultStatus.OK)
                 {
-                    break;
+                    //break;
                 }
             }
 
