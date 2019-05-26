@@ -83,7 +83,6 @@ namespace DNCIArticleConsoleApplication
         [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
          static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName);
 
-
         [DllImport("kernel32.dll", SetLastError = true)]
          static extern uint GetProcessId(IntPtr handle);
 
@@ -132,84 +131,71 @@ namespace DNCIArticleConsoleApplication
             public string szExePath;
         };
 
-        static int Main(string[] args)
-        {
+static int Main(string[] args)
+{
 
-            /*** Configuration Variables ***/
-            String targetProcessName = "notepad++";     // Define Target Process
-            String clrLoaderLibraryPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "DNCIClrLoader.dll");   // Get CLR Runtime Loader Path
-            String clrLoaderLibraryFileName = "DNCIClrLoader.dll";  // CLR Runtime Loader DLL Name
+    /*** Configuration Variables ***/
+    String targetProcessName = "notepad++";     // Define Target Process
+    String clrLoaderLibraryPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "DNCIClrLoader.dll");   // Get CLR Runtime Loader Path
+    String clrLoaderLibraryFileName = "DNCIClrLoader.dll";  // CLR Runtime Loader DLL Name
 
-            String targetDotNetAssemblyPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "InjectDemo.Console.ClassicNet.exe");
-            String targetDotNetAssemblyEntryPointAssemblyType = "InjectDemo.Console.ClassicNet.Program";
-            String targetDotNetAssemblyEntryPointMethodName = "EntryPoint";
-            String targetDotNetAssemblyEntryPointMethodParameters = "Parameter String OK";
+    String targetDotNetAssemblyPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "InjectDemo.Console.ClassicNet.exe");
+    String targetDotNetAssemblyEntryPointAssemblyType = "InjectDemo.Console.ClassicNet.Program";
+    String targetDotNetAssemblyEntryPointMethodName = "EntryPoint";
+    String targetDotNetAssemblyEntryPointMethodParameters = "Parameter String OK";
 
-            // Find the Process Info
-            Int32 targetProcessId = Process.GetProcessesByName(targetProcessName)[0].Id;
+    // Find the Process Info
+    Int32 targetProcessId = Process.GetProcessesByName(targetProcessName)[0].Id;
        
 
 
-            /*** Open and get handle of the process - with required privileges ***/ 
-            IntPtr targetProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, false, targetProcessId);
-            if (targetProcessHandle == null || targetProcessHandle == IntPtr.Zero)
-            {
-                return -1;
-            }
+    /*** Open and get handle of the process - with required privileges ***/ 
+    IntPtr targetProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, false, targetProcessId);
+    if (targetProcessHandle == null || targetProcessHandle == IntPtr.Zero)
+    {
+        return -1;
+    }
 
 
 
-            /*** Inject CLR Runtime Loader into Remote Process ***/
-            Inject(targetProcessHandle, GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryW"), clrLoaderLibraryPath);
+    /*** Inject CLR Runtime Loader into Remote Process ***/
+    Inject(targetProcessHandle, GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryW"), clrLoaderLibraryPath);
 
 
 
-            /*** Find LoadDNA Function from CLR Runtime Loader into Remote Process Memory ***/
-            IntPtr dnciModuleHandle = FindRemoteModuleHandle(targetProcessHandle, clrLoaderLibraryFileName);
-            if (dnciModuleHandle == null || dnciModuleHandle == IntPtr.Zero)
-            {
-                return -2;
-            }
+    /*** Get Module (C++ CLR Runtime Loader) Handle ***/
+    IntPtr clrRuntimeLoaderHandle = FindRemoteModuleHandle(targetProcessHandle, clrLoaderLibraryFileName);
+    if (clrRuntimeLoaderHandle == null || clrRuntimeLoaderHandle == IntPtr.Zero)
+    {
+        return -2;
+    }
 
 
 
-            /*** Load .NET Assembly into Remote Process ***/
+    /*** Load .NET Assembly into Remote Process ***/
 
-            // Find Target Function OffSet
-            uint targetOffset = GetFunctionOffSet(clrLoaderLibraryPath, "LoadDNA");
+    // Find LoadDNA Function from C++ CLR Runtime Loader into Remote Process Memory
+    uint targetOffset = GetFunctionOffSet(clrLoaderLibraryPath, "LoadDNA");
 
-            // Compute OffSet into Remote Target
-            uint remoteTargetOffSet = targetOffset + (uint)dnciModuleHandle.ToInt32();
+    // Compute OffSet into Remote Target
+    uint remoteTargetOffSet = targetOffset + (uint)clrRuntimeLoaderHandle.ToInt32();
 
-            // Build LoadDNA Function Arguments
-            String loadDnaArgs = targetDotNetAssemblyPath + "\t" + targetDotNetAssemblyEntryPointAssemblyType + "\t" + targetDotNetAssemblyEntryPointMethodName + "\t" + targetDotNetAssemblyEntryPointMethodParameters;
+    // Build LoadDNA Function Arguments
+    String loadDnaArgs = targetDotNetAssemblyPath + "\t" + targetDotNetAssemblyEntryPointAssemblyType + "\t" + targetDotNetAssemblyEntryPointMethodName + "\t" + targetDotNetAssemblyEntryPointMethodParameters;
 
-            // Inject .NET Assembly using LoadDNA Function on DNCIClrLoader.dll
-            Inject(targetProcessHandle, new IntPtr(remoteTargetOffSet), loadDnaArgs);
+    // Inject .NET Assembly using LoadDNA Function on DNCIClrLoader.dll
+    Inject(targetProcessHandle, new IntPtr(remoteTargetOffSet), loadDnaArgs);
 
 
 
-            /*** Remove Module from Remote Process ***/
+    /*** Remove Module from Remote Process ***/
 
-            // Close Remote Process Handle
-            CloseHandle(targetProcessHandle);
+    // Close Remote Process Handle
+    CloseHandle(targetProcessHandle);
 
-            return 0;
-        }
+    return 0;
+}
 
-        /// <summary>
-        /// Removes from Target Process Memory the DNCIClrLoader
-        /// </summary>
-        /// <param name="targetProcessHandle">Target Process Handle</param>
-        /// <param name="dnciModuleHandle">DNCIClrLoader Module Handle</param>
-        static void EraseRemoteModules(IntPtr targetProcessHandle, IntPtr dnciModuleHandle)
-        {
-            // Resolve FreeLibrary function pointer into kernel32 address space
-            IntPtr freeLibraryHandle = GetProcAddress(GetModuleHandle("Kernel32"), "FreeLibrary");
-
-            // Unload DNCIClrLoader.dll from Remote Process
-            CreateRemoteThread(targetProcessHandle, IntPtr.Zero, 0, freeLibraryHandle, dnciModuleHandle, 0, IntPtr.Zero);
-        }
 
         /// <summary>
         /// Get Target Function OffSet
