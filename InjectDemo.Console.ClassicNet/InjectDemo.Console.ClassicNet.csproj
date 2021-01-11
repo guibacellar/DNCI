@@ -48,6 +48,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y  $(TargetPath) ..\..\..\DNCIArticleConsoleApplication\bin\Debug\</PostBuildEvent>
+    <PostBuildEvent>xcopy /y  "$(TargetPath)" "..\..\..\DNCIArticleConsoleApplication\bin\Debug\"</PostBuildEvent>
   </PropertyGroup>
 </Project>
